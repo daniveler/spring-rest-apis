@@ -1,7 +1,10 @@
 package com.openwebinars.rest.controller;
 
 import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,13 +18,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.openwebinars.rest.modelo.Producto;
 import com.openwebinars.rest.modelo.ProductoRepositorio;
 
+import converter.ProductoDTOConverter;
+import dto.ProductoDTO;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-public class ProductoController {
+public class ProductoController
+{
 
 	private final ProductoRepositorio productoRepositorio;
+	
+	private final ProductoDTOConverter productoDTOConverter;
 
 	/**
 	 * Obtenemos todos los productos
@@ -29,13 +37,21 @@ public class ProductoController {
 	 * @return 404 si no hay productos, 200 y lista de productos si hay uno o más
 	 */
 	@GetMapping("/producto")
-	public ResponseEntity<?> obtenerTodos() {
+	public ResponseEntity<?> obtenerTodos()
+	{
 		List<Producto> result = productoRepositorio.findAll();
 
-		if (result.isEmpty()) {
+		if (result.isEmpty())
+		{
 			return ResponseEntity.notFound().build();
-		} else {
-			return ResponseEntity.ok(result);
+		} else
+		{
+			//return ResponseEntity.ok(result);
+			List<ProductoDTO> dtoList = result.stream()
+					.map(productoDTOConverter::convertToDto)
+					.collect(Collectors.toList());
+			
+			return ResponseEntity.ok(dtoList);
 		}
 
 	}
@@ -47,7 +63,8 @@ public class ProductoController {
 	 * @return 404 si no encuentra el producto, 200 y el producto si lo encuentra
 	 */
 	@GetMapping("/producto/{id}")
-	public ResponseEntity<?> obtenerUno(@PathVariable Long id) {
+	public ResponseEntity<?> obtenerUno(@PathVariable Long id)
+	{
 		Producto result = productoRepositorio.findById(id).orElse(null);
 		if (result == null)
 			return ResponseEntity.notFound().build();
@@ -62,7 +79,8 @@ public class ProductoController {
 	 * @return 201 y el producto insertado
 	 */
 	@PostMapping("/producto")
-	public ResponseEntity<?> nuevoProducto(@RequestBody Producto nuevo) {
+	public ResponseEntity<?> nuevoProducto(@RequestBody Producto nuevo)
+	{
 		Producto saved = productoRepositorio.save(nuevo);
 		return ResponseEntity.status(HttpStatus.CREATED).body(saved);
 	}
@@ -74,7 +92,8 @@ public class ProductoController {
 	 * @return 200 Ok si la edición tiene éxito, 404 si no se encuentra el producto
 	 */
 	@PutMapping("/producto/{id}")
-	public ResponseEntity<?> editarProducto(@RequestBody Producto editar, @PathVariable Long id) {
+	public ResponseEntity<?> editarProducto(@RequestBody Producto editar, @PathVariable Long id)
+	{
 
 		return productoRepositorio.findById(id).map(p -> {
 			p.setNombre(editar.getNombre());
@@ -92,7 +111,8 @@ public class ProductoController {
 	 * @return Código 204 sin contenido
 	 */
 	@DeleteMapping("/producto/{id}")
-	public ResponseEntity<?> borrarProducto(@PathVariable Long id) {
+	public ResponseEntity<?> borrarProducto(@PathVariable Long id)
+	{
 		productoRepositorio.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}
